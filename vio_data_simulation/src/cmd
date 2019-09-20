@@ -1,0 +1,23 @@
+evo_traj tum /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/cam_pose_tum.txt  /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/VINS-Course/bin/pose_output.txt  --align -va -p
+
+
+evo_traj tum /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/cam_pose_tum.txt  /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt --ref=/Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt -p --align  -va --plot_mode=xy
+
+
+evo_ape tum /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/VINS-Course/bin/pose_output.txt /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt  -p --plot_mode=xy --align  -va
+
+evo_rpe tum /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/VINS-Course/bin/pose_output.txt /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/cam_pose_tum.txt  -p --align  -va  --plot_mode=xy
+
+
+
+evo_traj tum /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/VINS-Course/bin/pose_output.txt /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt  --ref=/Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt -p --align  -va --plot_mode=xy
+
+
+
+
+
+
+evo_traj tum /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/VINS-Course/bin/pose_output.txt /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt  --ref=/Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt -p --align  -va --plot_mode=xy
+
+
+evo_traj tum /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/cam_pose_tum.txt /Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt  --ref=/Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/imu_pose_tum.txt -p --align  -va --plot_mode=xy
