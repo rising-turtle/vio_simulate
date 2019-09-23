@@ -15,7 +15,7 @@ CreatePointsLines(std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::V
     std::vector < std::pair< Eigen::Vector4d, Eigen::Vector4d > > lines;
 
     std::ifstream f;
-    f.open("house_model/house.txt");
+    f.open("../house_model/house.txt");
 
     while(!f.eof())
     {
