@@ -50,6 +50,7 @@ double Edge::RobustChi2() const{
 void Edge::RobustInfo(double &drho, MatXX &info) const{
     if(lossfunction_)
     {
+        // the theory behind this can be found in ceres-solver.org/nnls_modeling.html
         /// robust_info = rho[1] * information_ + information_ * r * r^T * information_
 
         double e2 = this->Chi2();
