@@ -286,7 +286,6 @@ void Problem::ComputeLambdaInitDogleg()
 
 bool Problem::SolveDogleg(int iterations) {
 
-
     if (edges_.size() == 0 || verticies_.size() == 0) {
         std::cerr << "\nCannot solve problem without edges or verticies" << std::endl;
         return false;
@@ -299,7 +298,7 @@ bool Problem::SolveDogleg(int iterations) {
     MakeHessian();
     // MakeHessianOpenMP();
     // Dogleg 初始化
-    ComputeChiAndLambdaInitDogLeg();
+    ComputeLambdaInitDogLeg();
     // Dogleg 算法迭代求解
     bool stop = false;
     int iter = 0;
@@ -313,22 +312,22 @@ bool Problem::SolveDogleg(int iterations) {
 
             // double alpha_,beta_;
             alpha_ = b_.squaredNorm() / (b_.transpose()*Hessian_*b_);
-						h_sd_ = alpha_ * b_;
+			h_sd_ = alpha_ * b_;
             h_gn_ = Hessian_.ldlt().solve(b_);
 
             
             if ( h_gn_.norm() <= radius_){
                 h_dl_ = h_gn_;
             }
-            else if ( alpha_ *h_sd_.norm() >= radius_ ) { 
+            else if ( h_sd_.norm() >= radius_ ) { // delete alpha_
                 h_dl_ = radius_ * ( h_sd_ / h_sd_.norm() );
             }
             else {
-                VecX a = alpha_ * h_sd_;   
+                VecX a = h_sd_;   // deleta alpha_ * 
                 VecX b = h_gn_;
                 double c = a.transpose() * (b - a);
                 if (c <= 0){
-                    beta_ = ( -c + sqrt(c*c + (b-a).squaredNorm() * (radius_*radius_ - a.squaredNorm())) ) / （ (b - a).squaredNorm() ）;
+                    beta_ = ( -c + sqrt(c*c + (b-a).squaredNorm() * (radius_*radius_ - a.squaredNorm())) ) / ((b - a).squaredNorm()) ;
                 }else{ 
                     beta_ = (radius_*radius_ - a.squaredNorm()) / ( c + sqrt(c*c + (b-a).squaredNorm()*(radius_*radius_ - a.squaredNorm())) );
                 }

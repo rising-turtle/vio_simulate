@@ -23,7 +23,7 @@ const int nDelayTimes = 2;
 // string sData_path = "/Users/jin/Q_MAC/MyDoc/shenlan_vio/08/vio_data_simulation/bin/";
 // string sConfig_path = "/Users/jin/Q_MAC/MyDoc/shenlan_vio/08/VINS-Course/config/";
 
-string sData_path = "/home/hzhang8/work/github/vio_data_simulation/bin/";
+string sData_path = "/home/hzhang8/work/github/vio_simulate/vio_data_simulation/bin/";
 
 string sConfig_path = "../config/";
 

@@ -3,13 +3,13 @@ project(vins_estimator)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS "-std=c++11")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -w -g")
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 
 # eigen3
-INCLUDE_DIRECTORIES ("/usr/local/include/eigen3/")
+INCLUDE_DIRECTORIES ("/usr/local/include/eigen3/" "./test")
 find_package(Eigen3 REQUIRED)
 
 
@@ -29,16 +29,16 @@ include_directories( ${CERES_INCLUDE_DIRS} )
 # /usr/local/Cellar/glog/0.4.0
 # SET(glog_include_DIR "/usr/local/Cellar/glog/0.4.0/include/")
 # SET(glog_LIB "/usr/local/Cellar/glog/0.4.0/lib/")
-find_package( glog )
-include_directories( ${glog_include_DIR})
-link_directories( ${glog_LIB} )
+# find_package( glog )
+# include_directories( ${glog_include_DIR})
+# link_directories( ${glog_LIB} )
 
 # "/usr/local/Cellar/gflags/2.2.2/include"
 # SET(gflags_include_DIR "/usr/local/Cellar/gflags/2.2.2/include/")
 # SET(gflags_LIB "/usr/local/Cellar/gflags/2.2.2/lib/")
-find_package( gflags )
-include_directories( ${gflags_include_DIR})
-link_directories( ${gflags_LIB} )
+# find_package( gflags )
+# include_directories( ${gflags_include_DIR})
+# link_directories( ${gflags_LIB} )
 
 
 # Pangolin
@@ -126,6 +126,9 @@ add_executable(run_euroc test/run_euroc.cpp)
 target_link_libraries(run_euroc 
   MyVio  
   -lpthread) 
+
+add_executable(run_sim test/run_sim.cpp test/get_imu.cpp)
+target_link_libraries(run_sim MyVio -lpthread)
 
 # add_executable(testCurveFitting test/CurveFitting.cpp)
 # target_link_libraries(testCurveFitting MyVio)

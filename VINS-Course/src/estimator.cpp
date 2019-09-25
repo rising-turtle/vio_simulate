@@ -179,6 +179,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 
     if (solver_flag == INITIAL)
     {
+        static int nfr = 0; 
+        nfr++;
         if (frame_count == WINDOW_SIZE)
         {
             bool result = false;
@@ -190,6 +192,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
             }
             if (result)
             {
+                cout <<" estimator: initialized successfully, at frame "<<nfr<<endl;
                 solver_flag = NON_LINEAR;
                 solveOdometry();
                 slideWindow();
@@ -1034,18 +1037,19 @@ void Estimator::problemSolve()
         }
     }
 
-    problem.Solve(10);
+    // problem.Solve(10);
+    problem.SolveLM(10);
 
     // update bprior_,  Hprior_ do not need update
     if (Hprior_.rows() > 0)
     {
-        std::cout << "----------- update bprior -------------\n";
-        std::cout << "             before: " << bprior_.norm() << std::endl;
-        std::cout << "                     " << errprior_.norm() << std::endl;
+        // std::cout << "----------- update bprior -------------\n";
+        // std::cout << "             before: " << bprior_.norm() << std::endl;
+        // std::cout << "                     " << errprior_.norm() << std::endl;
         bprior_ = problem.GetbPrior();
         errprior_ = problem.GetErrPrior();
-        std::cout << "             after: " << bprior_.norm() << std::endl;
-        std::cout << "                    " << errprior_.norm() << std::endl;
+        // std::cout << "             after: " << bprior_.norm() << std::endl;
+        // std::cout << "                    " << errprior_.norm() << std::endl;
     }
 
     // update parameter
@@ -1076,10 +1080,10 @@ void Estimator::problemSolve()
     //                       << extrinsics[3] << " " << endl;
 
 
-    cout << "TIC" << " " << extrinsics[0] << " " << extrinsics[1] << " " << extrinsics[2]<< endl;
+    // cout << "TIC" << " " << extrinsics[0] << " " << extrinsics[1] << " " << extrinsics[2]<< endl;
 
-    cout << "RIC" << " " << extrinsics[3] << " " << extrinsics[4] << " " << extrinsics[5] << " " 
-                          << extrinsics[6] << " " << endl;
+    // cout << "RIC" << " " << extrinsics[3] << " " << extrinsics[4] << " " << extrinsics[5] << " " 
+    //                      << extrinsics[6] << " " << endl;
 }
 
 
