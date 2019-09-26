@@ -33,6 +33,7 @@ void EstimatorIntric::clearState()
 	Estimator::clearState(); 
 	for(int i=0; i<WINDOW_SIZE+1; i++){
 		CamIncs[i].setZero(); 
+        CamIncs[i]<< FOCAL_LENGTH, CX, CY;
 	}
 }
 
@@ -84,7 +85,7 @@ void EstimatorIntric::solveOdometry()
         backendOptimization();
 
         // update features 
-        f_manager.updateFeature(CamIncs);
+        // f_manager.updateFeature(CamIncs);
     }
 }
 

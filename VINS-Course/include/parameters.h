@@ -14,6 +14,8 @@
 const int NUM_OF_CAM = 1;
 
 extern int FOCAL_LENGTH;
+extern int CX; 
+extern int CY;
 extern std::string IMAGE_TOPIC;
 extern std::string IMU_TOPIC;
 extern std::string FISHEYE_MASK;

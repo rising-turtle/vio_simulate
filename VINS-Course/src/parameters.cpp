@@ -31,8 +31,11 @@ double ROW, COL;
 double TD, TR;
 
 
-
+// true camera intric
 int FOCAL_LENGTH;
+int CX;
+int CY; 
+
 string IMAGE_TOPIC;
 string IMU_TOPIC;
 string FISHEYE_MASK;
@@ -68,6 +71,8 @@ void readParameters(string config_file)
     fsSettings["imu_topic"] >> IMU_TOPIC;
 
     FOCAL_LENGTH = 460;
+    CX = 320; 
+    CY = 240;
     SOLVER_TIME = fsSettings["max_solver_time"];
     NUM_ITERATIONS = fsSettings["max_num_iterations"];
     MIN_PARALLAX = fsSettings["keyframe_parallax"];

@@ -27,7 +27,9 @@ using namespace Eigen;
 
 const int nDelayTimes = 5; 
 
-string sData_path = "/home/hzhang8/work/github/vio_simulate/vio_data_simulation/bin/";
+// string sData_path = "/home/hzhang8/work/github/vio_simulate/vio_data_simulation/bin/";
+
+string sData_path = "../../vio_data_simulation/bin/";
 
 string sConfig_path = "../config/";
 
@@ -62,7 +64,7 @@ void PubImuData()
 
 		// cout << "Imu t: " << fixed << dStampNSec << " gyr: " << vGyr.transpose() << " acc: " << vAcc.transpose() << endl;
 		pSystem->PubImuData(dStampNSec, vGyr, vAcc); //Modified
-		usleep(1000*5); // ms 200 hz about 5ms  
+		usleep(1000*5*10); // ms 200 hz about 5ms  
 	}
 }
 
@@ -117,7 +119,9 @@ void PubImageData()
 	string sImgFileName;
 
 	// ground truth 
-	double fx = 460.0; double fy = 460.0; double cx = 320.0; double cy = 240.0;
+	double fx = FOCAL_LENGTH;  double fy = FOCAL_LENGTH;// 460.
+	double cx = CX; // 320.0; 
+	double cy = CY; // 240.0;
 	
 	double dfx, dcx, dcy; 
 	double tf = fx; double tcx = cx; double tcy = cy; 
@@ -158,7 +162,7 @@ void PubImageData()
 			tcx += dcx * dt; 
 			tcy += dcy * dt;
 
-			cout <<"run_sim: now f: "<<tf<<" cx: "<< tcx<<" cy: "<<tcy<<endl;
+			// cout <<"run_sim: now f: "<<tf<<" cx: "<< tcx<<" cy: "<<tcy<<endl;
 
 		} 
 
@@ -210,7 +214,7 @@ void PubImageData()
 		
 		pSystem->PubFeatureData(dStampNSec , ids, /*landmarks,*/feature_positions_un, feature_positions, feature_velocities);
 
-		usleep(1000*20*nDelayTimes); // 30 hz, 33 ms 
+		usleep(1000*20*5*nDelayTimes); // 30 hz, 33 ms 
 	}
 	fsTimestamp.close();
 }
