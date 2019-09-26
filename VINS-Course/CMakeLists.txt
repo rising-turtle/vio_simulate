@@ -131,6 +131,9 @@ target_link_libraries(run_euroc
 add_executable(run_sim test/run_sim.cpp test/get_imu.cpp)
 target_link_libraries(run_sim MyVio -lpthread)
 
+add_executable(check_edge test/check_edge.cpp)
+target_link_libraries(check_edge MyVio -lpthread)
+
 # add_executable(testCurveFitting test/CurveFitting.cpp)
 # target_link_libraries(testCurveFitting MyVio)
 

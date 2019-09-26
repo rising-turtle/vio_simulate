@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+using namespace std;
+
 namespace myslam {
 namespace backend {
 
@@ -173,6 +175,12 @@ void EdgeReprojectionIntri::ComputeResidual() {
     Vec3 pts_imu_j = Qj.inverse() * (pts_w - Pj);
     Vec3 pts_camera_j = qic.inverse() * (pts_imu_j - tic);
 
+    // cout <<"uvi: "<<pts_i_.transpose()<<endl; 
+    // cout <<"uvj: "<<pts_j_.transpose()<<endl;
+    // cout <<"ptsi: "<<ptsi.transpose()<<endl;
+    // cout <<"ptsj: "<<ptsj.transpose()<<endl; 
+    // cout <<"ptsj': "<<pts_camera_j.transpose()<<endl;
+
     double dep_j = pts_camera_j.z();
     residual_ = (pts_camera_j / dep_j).head<2>() - ptsj.head<2>();   /// J^t * J * delta_x = - J^t * r
 //    residual_ = information_ * residual_;   // remove information here, we multi information matrix in problem solver
@@ -219,11 +227,11 @@ void EdgeReprojectionIntri::ComputeJacobians() {
 
     Mat33 dpi_din; 
     Mat23 dpj_din; 
-    dpi_din << cxi / (fi*fi), -1./fi, 0,
-               cyi / (fi*fi), 0., -1./fi,
+    dpi_din << (cxi-pts_i_.x()) / (fi*fi), -1./fi, 0,
+               (cyi-pts_i_.y()) / (fi*fi), 0., -1./fi,
                0, 0, 0; 
-    dpj_din << cxj / (fj*fj), -1./fj, 0, 
-               cyj / (fj*fj), 0, -1./fj;
+    dpj_din << (cxj-pts_j_.x()) / (fj*fj), -1./fj, 0, 
+               (cyj-pts_j_.y()) / (fj*fj), 0, -1./fj;
 
     Vec3 pts_camera_i = ptsi / inv_dep_i;
     Vec3 pts_imu_i = qic * pts_camera_i + tic;
@@ -255,7 +263,7 @@ void EdgeReprojectionIntri::ComputeJacobians() {
     jaco_j.rightCols<3>() = ric.transpose() * Sophus::SO3d::hat(pts_imu_j); // dpj'_dqj
     
     jacobian_pose_j.leftCols<6>() = reduce * jaco_j;
-    jacobian_pose_j.rightCols<3>() = dpj_din; // dpj_din_j 
+    jacobian_pose_j.rightCols<3>() = -dpj_din; // dpj_din_j 
 
     Eigen::Vector2d jacobian_feature;
     jacobian_feature = reduce * ric.transpose() * Rj.transpose() * Ri * ric * ptsi * -1.0 / (inv_dep_i * inv_dep_i);

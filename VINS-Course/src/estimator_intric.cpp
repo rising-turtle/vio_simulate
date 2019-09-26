@@ -255,7 +255,7 @@ void EstimatorIntric::MargNewFrame()
     for (int i = 0; i < WINDOW_SIZE + 1; i++)
     {
         shared_ptr<backend::VertexPoseIntri> vertexCam(new backend::VertexPoseIntri());
-        Eigen::VectorXd pose(7);
+        Eigen::VectorXd pose(10);
         pose << para_Pose[i][0], para_Pose[i][1], para_Pose[i][2], para_Pose[i][3], para_Pose[i][4], 
         para_Pose[i][5], para_Pose[i][6], para_CamIntrics[i][0], para_CamIntrics[i][1], para_CamIntrics[i][2];
         vertexCam->SetParameters(pose);
