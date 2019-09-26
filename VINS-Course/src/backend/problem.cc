@@ -93,7 +93,8 @@ void Problem::ExtendHessiansPriorSize(int dim)
 bool Problem::IsPoseVertex(std::shared_ptr<myslam::backend::Vertex> v) {
     string type = v->TypeInfo();
     return type == string("VertexPose") ||
-            type == string("VertexSpeedBias");
+            type == string("VertexSpeedBias") || 
+            type == string("VertexPoseIntri");
 }
 
 bool Problem::IsLandmarkVertex(std::shared_ptr<myslam::backend::Vertex> v) {

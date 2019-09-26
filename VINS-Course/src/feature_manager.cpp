@@ -199,6 +199,27 @@ VectorXd FeatureManager::getDepthVector()
     return dep_vec;
 }
 
+// update features using new camera intrinsic parameters
+void FeatureManager::updateFeature(Vector3d CamInc[])
+{
+    for(auto &it_per_id: feature){
+        int imu_i = it_per_id.start_frame; 
+        int imu_j = imu_i - 1; 
+        double f, cx, cy; 
+        for(auto &it_per_frame : it_per_id.feature_per_frame){
+            imu_j++; 
+            Eigen::Vector3d cinc = CamInc[imu_j]; 
+            f = cinc.x(); 
+            cx = cinc.y(); 
+            cy = cinc.z();
+
+            it_per_frame.point.x() = (it_per_frame.uv.x() - cx)/f; 
+            it_per_frame.point.y() = (it_per_frame.uv.y() - cy)/f;
+            it_per_frame.point.z() = 1.;
+        }
+    }
+}
+
 void FeatureManager::triangulate(Vector3d Ps[], Vector3d tic[], Matrix3d ric[])
 {
     for (auto &it_per_id : feature)

@@ -902,6 +902,7 @@ void Estimator::MargNewFrame()
     errprior_ = problem.GetErrPrior();
     Jprior_inv_ = problem.GetJtPrior();
 }
+
 void Estimator::problemSolve()
 {
     backend::LossFunction *lossfunction;

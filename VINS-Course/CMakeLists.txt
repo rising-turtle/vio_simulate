@@ -96,6 +96,7 @@ ADD_LIBRARY(MyVio SHARED
     src/System.cpp
     src/parameters.cpp
     src/estimator.cpp
+    src/estimator_intric.cpp
     src/feature_manager.cpp
     src/feature_tracker.cpp
 

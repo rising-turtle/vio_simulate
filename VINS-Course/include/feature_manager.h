@@ -94,6 +94,9 @@ public:
   list<FeaturePerId> feature;
   int last_track_num;
 
+  // added update feature projection 
+  void updateFeature(Vector3d CamInc[]);
+
 private:
   double compensatedParallax2(const FeaturePerId &it_per_id, int frame_count);
   const Matrix3d *Rs;

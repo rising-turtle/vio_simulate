@@ -43,6 +43,22 @@ public:
      */
 };
 
+class VertexPoseIntri : public Vertex{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+    VertexPoseIntri() : Vertex(10, 9){}
+
+    virtual void Plus(const VecX & delta) override; 
+
+    std::string TypeInfo() const{
+        return "VertexPoseIntri";
+    }
+
+};
+
+
+
 }
 }
 

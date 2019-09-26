@@ -48,6 +48,32 @@ private:
     Vec3 pts_i_, pts_j_;
 };
 
+// extend edge projection by adding camera intrinsic parameters 
+class EdgeReprojectionIntri : public Edge{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+    EdgeReprojectionIntri(const Vec3 &pts_i, const Vec3 &pts_j)
+        : Edge(2, 4, std::vector<std::string>{"VertexInverseDepth", "VertexPose", "VertexPose", "VertexPose"}) {
+        pts_i_ = pts_i;
+        pts_j_ = pts_j;
+    }
+
+    /// 返回边的类型信息
+    virtual std::string TypeInfo() const override { return "EdgeReprojectionIntri"; }
+
+    /// 计算残差
+    virtual void ComputeResidual() override;
+
+    /// 计算雅可比
+    virtual void ComputeJacobians() override;
+
+private:
+
+    //measurements in general image plane not in the normalized image plane 
+    Vec3 pts_i_, pts_j_;    
+};
+
 /**
 * 此边是视觉重投影误差，此边为二元边，与之相连的顶点有：
 * 路标点的世界坐标系XYZ、观测到该路标点的 Camera 的位姿T_World_From_Body1
