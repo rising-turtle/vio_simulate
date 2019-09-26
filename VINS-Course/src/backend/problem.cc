@@ -93,7 +93,8 @@ void Problem::ExtendHessiansPriorSize(int dim)
 bool Problem::IsPoseVertex(std::shared_ptr<myslam::backend::Vertex> v) {
     string type = v->TypeInfo();
     return type == string("VertexPose") ||
-            type == string("VertexSpeedBias");
+            type == string("VertexSpeedBias") || 
+            type == string("VertexPoseIntri");
 }
 
 bool Problem::IsLandmarkVertex(std::shared_ptr<myslam::backend::Vertex> v) {
@@ -166,7 +167,7 @@ bool Problem::RemoveEdge(std::shared_ptr<Edge> edge) {
     return true;
 }
 
-bool Problem::Solve(int iterations) {
+bool Problem::Solve(int iterations, int marginalized_dd ) {
 
 
     if (edges_.size() == 0 || verticies_.size() == 0) {
@@ -208,7 +209,7 @@ bool Problem::Solve(int iterations) {
 //            }
 
             // 更新状态量
-            UpdateStates();
+            UpdateStates(marginalized_dd);
             // 判断当前步是否可行以及 LM 的 lambda 怎么更新, chi2 也计算一下
             oneStepSuccess = IsGoodStepInLM();
             // 后续处理，
@@ -379,6 +380,7 @@ void Problem::MakeHessian() {
 //                std::cout << " fixed prior, set the Hprior and bprior part to zero, idx: "<<idx <<" dim: "<<dim<<std::endl;
             }
         }
+        // cout <<" problem.cc: ordering_poses_: "<<ordering_poses_<<" H size: "<<H_prior_tmp.rows()<<" x "<<H_prior_tmp.cols()<<endl;
         Hessian_.topLeftCorner(ordering_poses_, ordering_poses_) += H_prior_tmp;
         b_.head(ordering_poses_) += b_prior_tmp;
     }
@@ -478,6 +480,35 @@ void Problem::UpdateStates() {
     }
 
 }
+
+void Problem::UpdateStates(int dd)
+{
+      // update vertex
+    for (auto vertex: verticies_) {
+        vertex.second->BackUpParameters();    // 保存上次的估计值
+
+        ulong idx = vertex.second->OrderingId();
+        ulong dim = vertex.second->LocalDimension();
+        VecX delta = delta_x_.segment(idx, dim);
+        vertex.second->Plus(delta);
+    }
+
+    // update prior
+    if (err_prior_.rows() > 0) {
+        // BACK UP b_prior_
+        b_prior_backup_ = b_prior_;
+        err_prior_backup_ = err_prior_;
+
+        /// update with first order Taylor, b' = b + \frac{\delta b}{\delta x} * \delta x
+        /// \delta x = Computes the linearized deviation from the references (linearization points)
+        b_prior_ -= H_prior_ * delta_x_.head(ordering_poses_);       // update the error_prior
+        err_prior_ = -Jt_prior_inv_ * b_prior_.head(ordering_poses_ - dd);
+
+//        std::cout << "                : "<< b_prior_.norm()<<" " <<err_prior_.norm()<< std::endl;
+//        std::cout << "     delta_x_ ex: "<< delta_x_.head(6).norm() << std::endl;
+    }
+}
+
 
 void Problem::RollbackStates() {
 
@@ -727,6 +758,8 @@ bool Problem::Marginalize(const std::vector<std::shared_ptr<Vertex> > margVertex
         marg_dim += dim;
         // move the marg pose to the Hmm bottown right
         // 将 row i 移动矩阵最下面
+        // cout<<"problem: idx = "<<idx<<" dim = "<<dim<<" reserve_size = "<<reserve_size<<endl; 
+        // cout<<"H_marg size: " <<H_marg.rows()<<" x "<<H_marg.cols()<<endl;
         Eigen::MatrixXd temp_rows = H_marg.block(idx, 0, dim, reserve_size);
         Eigen::MatrixXd temp_botRows = H_marg.block(idx + dim, 0, reserve_size - idx - dim, reserve_size);
         H_marg.block(idx, 0, reserve_size - idx - dim, reserve_size) = temp_botRows;

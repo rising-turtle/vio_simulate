@@ -210,7 +210,7 @@ void EstimatorIntric::MargOldFrame()
             problem.SetbPrior(bprior_);
             problem.SetErrPrior(errprior_);
             problem.SetJtPrior(Jprior_inv_);
-            problem.ExtendHessiansPriorSize(15); // 但是这个 prior 还是之前的维度，需要扩展下装新的pose
+            problem.ExtendHessiansPriorSize(18); // 15 但是这个 prior 还是之前的维度，需要扩展下装新的pose
         }
         else
         {
@@ -286,7 +286,7 @@ void EstimatorIntric::MargNewFrame()
             problem.SetErrPrior(errprior_);
             problem.SetJtPrior(Jprior_inv_);
 
-            problem.ExtendHessiansPriorSize(15); // 但是这个 prior 还是之前的维度，需要扩展下装新的pose
+            problem.ExtendHessiansPriorSize(18); // 15 但是这个 prior 还是之前的维度，需要扩展下装新的pose
         }
         else
         {
@@ -445,11 +445,11 @@ void EstimatorIntric::problemSolve()
             problem.SetbPrior(bprior_);
             problem.SetErrPrior(errprior_);
             problem.SetJtPrior(Jprior_inv_);
-            problem.ExtendHessiansPriorSize(15); // 但是这个 prior 还是之前的维度，需要扩展下装新的pose
+            problem.ExtendHessiansPriorSize(18); // 15 但是这个 prior 还是之前的维度，需要扩展下装新的pose
         }
     }
 
-    problem.Solve(10);
+    problem.Solve(10, 18);
     // problem.SolveLM(10);
 
     // update bprior_,  Hprior_ do not need update

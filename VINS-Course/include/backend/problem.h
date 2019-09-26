@@ -65,7 +65,7 @@ public:
      * @param iterations
      * @return
      */
-    bool Solve(int iterations = 10);
+    bool Solve(int iterations = 10, int marginalize_dd = 15);
 
     /// 边缘化一个frame和以它为host的landmark
     bool Marginalize(std::shared_ptr<Vertex> frameVertex,
@@ -114,6 +114,8 @@ private:
 
     /// 更新状态变量
     void UpdateStates();
+
+    void UpdateStates(int dd);
 
     void RollbackStates(); // 有时候 update 后残差会变大，需要退回去，重来
 

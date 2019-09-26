@@ -1,4 +1,5 @@
 #include "System.h"
+#include "estimator_intric.h"
 
 #include <pangolin/pangolin.h>
 
@@ -7,7 +8,8 @@ using namespace cv;
 using namespace pangolin;
 
 System::System(string sConfig_file_)
-    :bStart_backend(true), estimator(new Estimator())
+    :bStart_backend(true),  // estimator(new Estimator())
+    estimator(new EstimatorIntric())
 {
     string sConfig_file = sConfig_file_ + "euroc_config.yaml";
 
