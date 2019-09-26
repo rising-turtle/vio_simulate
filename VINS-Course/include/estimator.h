@@ -22,6 +22,8 @@ class Estimator
   public:
     Estimator();
 
+    virtual ~Estimator();
+
     void setParameter();
 
     // interface
@@ -31,23 +33,24 @@ class Estimator
     void setReloFrame(double _frame_stamp, int _frame_index, vector<Vector3d> &_match_points, Vector3d _relo_t, Matrix3d _relo_r);
 
     // internal
-    void clearState();
     bool initialStructure();
     bool visualInitialAlign();
     bool relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l);
-    void slideWindow();
-    void solveOdometry();
-    void slideWindowNew();
-    void slideWindowOld();
-    void optimization();
-    void backendOptimization();
 
-    void problemSolve();
-    void MargOldFrame();
-    void MargNewFrame();
+    virtual void clearState();
+    virtual void slideWindow();
+    virtual void solveOdometry();
+    virtual void slideWindowNew();
+    virtual void slideWindowOld();
+    // virtual void optimization();
+    virtual void backendOptimization();
 
-    void vector2double();
-    void double2vector();
+    virtual void problemSolve();
+    virtual void MargOldFrame();
+    virtual void MargNewFrame();
+
+    virtual void vector2double();
+    virtual void double2vector();
     bool failureDetection();
 
 

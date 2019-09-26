@@ -93,7 +93,8 @@ void Problem::ExtendHessiansPriorSize(int dim)
 bool Problem::IsPoseVertex(std::shared_ptr<myslam::backend::Vertex> v) {
     string type = v->TypeInfo();
     return type == string("VertexPose") ||
-            type == string("VertexSpeedBias");
+            type == string("VertexSpeedBias") || 
+            type == string("VertexPoseIntri");
 }
 
 bool Problem::IsLandmarkVertex(std::shared_ptr<myslam::backend::Vertex> v) {
@@ -187,7 +188,7 @@ bool Problem::SolveLM(int iterations) {
     int iter = 0;
     double last_chi_ = 1e20;
     while (!stop && (iter < iterations)) {
-        std::cout << "iter: " << iter << " , chi= " << currentChi_ << " , Lambda= " << currentLambda_ << std::endl;
+       // std::cout << "iter: " << iter << " , chi= " << currentChi_ << " , Lambda= " << currentLambda_ << std::endl;
         bool oneStepSuccess = false;
         int false_cnt = 0;
         while (!oneStepSuccess && false_cnt < 10)  // 不断尝试 Lambda, 直到成功迭代一步
@@ -240,18 +241,18 @@ bool Problem::SolveLM(int iterations) {
 //        if (sqrt(currentChi_) < 1e-15)
         if(last_chi_ - currentChi_ < 1e-5)
         {
-            std::cout << "sqrt(currentChi_) <= stopThresholdLM_" << std::endl;
+            // std::cout << "sqrt(currentChi_) <= stopThresholdLM_" << std::endl;
             stop = true;
         }
         last_chi_ = currentChi_;
     }
-    std::cout << "problem solve cost: " << t_solve.toc() << " ms" << std::endl;
-    std::cout << "   makeHessian cost: " << t_hessian_cost_ << " ms" << std::endl;
+    // std::cout << "problem solve cost: " << t_solve.toc() << " ms" << std::endl;
+    // std::cout << "   makeHessian cost: " << t_hessian_cost_ << " ms" << std::endl;
    
 
-    ofs_rt.open("/Users/jin/Q_MAC/MyDoc/shenlan_vio/output/runtime_anaylsis.txt",fstream::out |fstream::app);
-    ofs_rt << fixed << t_solve.toc()<< " "  << t_hessian_cost_ << endl;
-    ofs_rt.close();
+    // ofs_rt.open("/Users/jin/Q_MAC/MyDoc/shenlan_vio/output/runtime_anaylsis.txt",fstream::out |fstream::app);
+    // ofs_rt << fixed << t_solve.toc()<< " "  << t_hessian_cost_ << endl;
+    // ofs_rt.close();
     
     t_hessian_cost_ = 0.;
     return true;
@@ -280,8 +281,8 @@ void Problem::ComputeLambdaInitDogleg()
     }
 
     maxDiagonal = std::min(5e10, maxDiagonal);
-  	radius_ = 1.0;
-  	currentLambda_ = 1e-7;
+    radius_ = 1.0;
+    currentLambda_ = 1e-7;
 }
 
 bool Problem::SolveDogleg(int iterations) {
@@ -298,13 +299,13 @@ bool Problem::SolveDogleg(int iterations) {
     MakeHessian();
     // MakeHessianOpenMP();
     // Dogleg 初始化
-    ComputeLambdaInitDogLeg();
+    ComputeLambdaInitDogleg();
     // Dogleg 算法迭代求解
     bool stop = false;
     int iter = 0;
     double last_chi_ = 1e20;
     while (!stop && (iter < iterations)) {
-        std::cout << "iter: " << iter << " , chi= " << currentChi_ << " , Lambda= " << currentLambda_ << std::endl;
+        // std::cout << "iter: " << iter << " , chi= " << currentChi_ << " , Lambda= " << currentLambda_ << std::endl;
         bool oneStepSuccess = false;
         int false_cnt = 0;
         while (!oneStepSuccess && false_cnt < 10)  // 不断尝试 Lambda, 直到成功迭代一步
@@ -312,7 +313,7 @@ bool Problem::SolveDogleg(int iterations) {
 
             // double alpha_,beta_;
             alpha_ = b_.squaredNorm() / (b_.transpose()*Hessian_*b_);
-			h_sd_ = alpha_ * b_;
+            h_sd_ = alpha_ * b_;
             h_gn_ = Hessian_.ldlt().solve(b_);
 
             
@@ -327,7 +328,7 @@ bool Problem::SolveDogleg(int iterations) {
                 VecX b = h_gn_;
                 double c = a.transpose() * (b - a);
                 if (c <= 0){
-                    beta_ = ( -c + sqrt(c*c + (b-a).squaredNorm() * (radius_*radius_ - a.squaredNorm())) ) / ((b - a).squaredNorm()) ;
+                    beta_ = ( -c + sqrt(c*c + (b-a).squaredNorm() * (radius_*radius_ - a.squaredNorm())) ) / ((b - a).squaredNorm());
                 }else{ 
                     beta_ = (radius_*radius_ - a.squaredNorm()) / ( c + sqrt(c*c + (b-a).squaredNorm()*(radius_*radius_ - a.squaredNorm())) );
                 }
@@ -368,13 +369,13 @@ bool Problem::SolveDogleg(int iterations) {
 //        if (sqrt(currentChi_) < 1e-15)
         if(last_chi_ - currentChi_ < 1e-5)
         {
-            std::cout << "sqrt(currentChi_) <= stopThresholdDogleg_" << std::endl;
+            // std::cout << "sqrt(currentChi_) <= stopThresholdDogleg_" << std::endl;
             stop = true;
         }
         last_chi_ = currentChi_;
     }
-    std::cout << "problem solve cost: " << t_solve.toc() << " ms" << std::endl;
-    std::cout << "   makeHessian cost: " << t_hessian_cost_ << " ms" << std::endl;
+    // std::cout << "problem solve cost: " << t_solve.toc() << " ms" << std::endl;
+    // std::cout << "   makeHessian cost: " << t_hessian_cost_ << " ms" << std::endl;
     t_hessian_cost_ = 0.;
     return true;
 }
@@ -403,8 +404,7 @@ bool Problem::IsGoodStepInDogleg(){
                 + beta_ * (2 - beta_) * currentChi_;
     }
 
-    rho_ = ( currentChi_ - tempChi )/ scale;
-
+    double rho_ = ( currentChi_ - tempChi )/scale;
 
     if (rho_ > 0.75 && isfinite(tempChi)) {
         radius_ = std::max(radius_, 3 * delta_x_.norm());
@@ -474,7 +474,7 @@ bool Problem::CheckOrdering() {
 }
 
 void Problem::MakeHessianOpenMP() {
-    TicToc t_h;
+ /*   TicToc t_h;
     // 直接构造大的 H 矩阵
     ulong size = ordering_generic_;
     MatXX H(MatXX::Zero(size, size));
@@ -565,12 +565,12 @@ void Problem::MakeHessianOpenMP() {
         }
         Hessian_.topLeftCorner(ordering_poses_, ordering_poses_) += H_prior_tmp;
         b_.head(ordering_poses_) += b_prior_tmp;
-    }
+    }*/
 
 }
 
 
-void Problem::MakeHessian() {
+/*void Problem::MakeHessian() {
     TicToc t_h;
     // 直接构造大的 H 矩阵
     ulong size = ordering_generic_;
@@ -670,7 +670,7 @@ void Problem::MakeHessian() {
     delta_x_ = VecX::Zero(size);  // initial delta_x = 0_n;
 
 
-}
+}*/
 
 
 void Problem::MakeHessian() {
@@ -1086,7 +1086,7 @@ bool Problem::Marginalize(const std::vector<std::shared_ptr<Vertex> > margVertex
         }
 
     }
-        std::cout << "edge factor cnt: " << ii <<std::endl;
+    //    std::cout << "edge factor cnt: " << ii <<std::endl;
 
     /// marg landmark
     int reserve_size = pose_dim;

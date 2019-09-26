@@ -28,6 +28,8 @@ Estimator::Estimator() : f_manager{Rs}
     clearState();
 }
 
+Estimator::~Estimator(){}
+
 void Estimator::setParameter()
 {
     for (int i = 0; i < NUM_OF_CAM; i++)
@@ -1038,8 +1040,8 @@ void Estimator::problemSolve()
         }
     }
 
-    // problem.Solve(10);
-    problem.SolveLM(10);
+    problem.Solve(10);
+    // problem.SolveLM(10);
 
     // update bprior_,  Hprior_ do not need update
     if (Hprior_.rows() > 0)

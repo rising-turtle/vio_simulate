@@ -9,9 +9,6 @@
 #include "edge.h"
 #include "vertex.h"
 
-#include <fstream>
-
-
 typedef unsigned long ulong;
 
 namespace myslam {
@@ -68,11 +65,7 @@ public:
      * @param iterations
      * @return
      */
-    // bool Solve(int iterations = 10);
-    // 使用LM进行求解
-    bool SolveLM(int iterations = 10);
-    // 使用Dogleg进行求解
-    bool SolveDogleg(int iterations = 10);
+    bool Solve(int iterations = 10);
 
     /// 边缘化一个frame和以它为host的landmark
     bool Marginalize(std::shared_ptr<Vertex> frameVertex,
@@ -112,7 +105,6 @@ private:
 
     /// 构造大H矩阵
     void MakeHessian();
-    void MakeHessianOpenMP() ;
 
     /// schur求解SBA
     void SchurSBA();
@@ -156,21 +148,9 @@ private:
 
     /// LM 算法中用于判断 Lambda 在上次迭代中是否可以，以及Lambda怎么缩放
     bool IsGoodStepInLM();
-    // Dogleg策略因子, 用于判断 Lambda 在上次迭代中是否可以，以及Lambda怎么缩放
-    bool IsGoodStepInDogleg();    
 
     /// PCG 迭代线性求解器
     VecX PCGSolver(const MatXX &A, const VecX &b, int maxIter);
-
-
-    /// 构造大H矩阵
-    // void MakeHessian();
-    //  使用OpenMP加速
-    // void MakeHessianOpenMP() ;
-
-
-    void ComputeLambdaInitDogleg();
-
 
     double currentLambda_;
     double currentChi_;
@@ -183,7 +163,6 @@ private:
     MatXX Hessian_;
     VecX b_;
     VecX delta_x_;
-
 
     /// 先验部分信息
     MatXX H_prior_;
@@ -225,22 +204,6 @@ private:
     bool bDebug = false;
     double t_hessian_cost_ = 0.0;
     double t_PCGsovle_cost_ = 0.0;
-
-    // Dogleg
-    double alpha_;
-    double beta_;
-    VecX h_dl_;
-    VecX h_sd_;
-    VecX h_gn_;
-    double radius_;
-
-    double  maxDiagonal_;
-    double  lastLambda_;
-
-    int Threads_NUM = 4;
-
-    std::ofstream ofs_rt;
-
 };
 
 }

@@ -26,6 +26,8 @@ Estimator()
 }
 
 
+EstimatorIntric::~EstimatorIntric(){}
+
 void EstimatorIntric::clearState()
 {
 	Estimator::clearState(); 
@@ -447,8 +449,8 @@ void EstimatorIntric::problemSolve()
         }
     }
 
-    // problem.Solve(10);
-    problem.SolveLM(10);
+    problem.Solve(10);
+    // problem.SolveLM(10);
 
     // update bprior_,  Hprior_ do not need update
     if (Hprior_.rows() > 0)

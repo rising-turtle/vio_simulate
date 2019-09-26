@@ -83,7 +83,8 @@ private:
     bool init_pub = 0;
 
     //estimator
-    Estimator estimator;
+    // Estimator estimator;
+    Estimator* estimator;
 
     std::condition_variable con;
     double current_time = -1;

@@ -93,8 +93,7 @@ void Problem::ExtendHessiansPriorSize(int dim)
 bool Problem::IsPoseVertex(std::shared_ptr<myslam::backend::Vertex> v) {
     string type = v->TypeInfo();
     return type == string("VertexPose") ||
-            type == string("VertexSpeedBias") || 
-            type == string("VertexPoseIntri");
+            type == string("VertexSpeedBias");
 }
 
 bool Problem::IsLandmarkVertex(std::shared_ptr<myslam::backend::Vertex> v) {
@@ -167,7 +166,7 @@ bool Problem::RemoveEdge(std::shared_ptr<Edge> edge) {
     return true;
 }
 
-bool Problem::SolveLM(int iterations) {
+bool Problem::Solve(int iterations) {
 
 
     if (edges_.size() == 0 || verticies_.size() == 0) {
@@ -180,7 +179,6 @@ bool Problem::SolveLM(int iterations) {
     SetOrdering();
     // 遍历edge, 构建 H 矩阵
     MakeHessian();
-    // MakeHessianOpenMP();
     // LM 初始化
     ComputeLambdaInitLM();
     // LM 算法迭代求解
@@ -188,7 +186,7 @@ bool Problem::SolveLM(int iterations) {
     int iter = 0;
     double last_chi_ = 1e20;
     while (!stop && (iter < iterations)) {
-       // std::cout << "iter: " << iter << " , chi= " << currentChi_ << " , Lambda= " << currentLambda_ << std::endl;
+        // std::cout << "iter: " << iter << " , chi= " << currentChi_ << " , Lambda= " << currentLambda_ << std::endl;
         bool oneStepSuccess = false;
         int false_cnt = 0;
         while (!oneStepSuccess && false_cnt < 10)  // 不断尝试 Lambda, 直到成功迭代一步
@@ -219,7 +217,6 @@ bool Problem::SolveLM(int iterations) {
 
                 // 在新线性化点 构建 hessian
                 MakeHessian();
-                // MakeHessianOpenMP();
                 // TODO:: 这个判断条件可以丢掉，条件 b_max <= 1e-12 很难达到，这里的阈值条件不应该用绝对值，而是相对值
 //                double b_max = 0.0;
 //                for (int i = 0; i < b_.size(); ++i) {
@@ -248,178 +245,8 @@ bool Problem::SolveLM(int iterations) {
     }
     // std::cout << "problem solve cost: " << t_solve.toc() << " ms" << std::endl;
     // std::cout << "   makeHessian cost: " << t_hessian_cost_ << " ms" << std::endl;
-   
-
-    // ofs_rt.open("/Users/jin/Q_MAC/MyDoc/shenlan_vio/output/runtime_anaylsis.txt",fstream::out |fstream::app);
-    // ofs_rt << fixed << t_solve.toc()<< " "  << t_hessian_cost_ << endl;
-    // ofs_rt.close();
-    
     t_hessian_cost_ = 0.;
     return true;
-}
-
-void Problem::ComputeLambdaInitDogleg()
-{
-    ni_ = 2.;
-    currentLambda_ = -1.;
-    currentChi_ = 0.0;
-
-    for (auto edge: edges_) {
-        currentChi_ += edge.second->RobustChi2();
-    }
-    if (err_prior_.rows() > 0)
-        currentChi_ += err_prior_.norm();
-    currentChi_ *= 0.5;
-
-    stopThresholdLM_ = 1e-10 * currentChi_;          // 迭代条件为 误差下降 1e-6 倍
-
-    double maxDiagonal = 0;
-    ulong size = Hessian_.cols();
-    assert(Hessian_.rows() == Hessian_.cols() && "Hessian is not square");
-    for (ulong i = 0; i < size; ++i) {
-        maxDiagonal = std::max(fabs(Hessian_(i, i)), maxDiagonal);
-    }
-
-    maxDiagonal = std::min(5e10, maxDiagonal);
-    radius_ = 1.0;
-    currentLambda_ = 1e-7;
-}
-
-bool Problem::SolveDogleg(int iterations) {
-
-    if (edges_.size() == 0 || verticies_.size() == 0) {
-        std::cerr << "\nCannot solve problem without edges or verticies" << std::endl;
-        return false;
-    }
-
-    TicToc t_solve;
-    // 统计优化变量的维数，为构建 H 矩阵做准备
-    SetOrdering();
-    // 遍历edge, 构建 H 矩阵
-    MakeHessian();
-    // MakeHessianOpenMP();
-    // Dogleg 初始化
-    ComputeLambdaInitDogleg();
-    // Dogleg 算法迭代求解
-    bool stop = false;
-    int iter = 0;
-    double last_chi_ = 1e20;
-    while (!stop && (iter < iterations)) {
-        // std::cout << "iter: " << iter << " , chi= " << currentChi_ << " , Lambda= " << currentLambda_ << std::endl;
-        bool oneStepSuccess = false;
-        int false_cnt = 0;
-        while (!oneStepSuccess && false_cnt < 10)  // 不断尝试 Lambda, 直到成功迭代一步
-        {
-
-            // double alpha_,beta_;
-            alpha_ = b_.squaredNorm() / (b_.transpose()*Hessian_*b_);
-            h_sd_ = alpha_ * b_;
-            h_gn_ = Hessian_.ldlt().solve(b_);
-
-            
-            if ( h_gn_.norm() <= radius_){
-                h_dl_ = h_gn_;
-            }
-            else if ( h_sd_.norm() >= radius_ ) { // delete alpha_
-                h_dl_ = radius_ * ( h_sd_ / h_sd_.norm() );
-            }
-            else {
-                VecX a = h_sd_;   // deleta alpha_ * 
-                VecX b = h_gn_;
-                double c = a.transpose() * (b - a);
-                if (c <= 0){
-                    beta_ = ( -c + sqrt(c*c + (b-a).squaredNorm() * (radius_*radius_ - a.squaredNorm())) ) / ((b - a).squaredNorm());
-                }else{ 
-                    beta_ = (radius_*radius_ - a.squaredNorm()) / ( c + sqrt(c*c + (b-a).squaredNorm()*(radius_*radius_ - a.squaredNorm())) );
-                }
-
-                h_dl_= a + beta_ * ( b - a );
-            } 
-            delta_x_ = h_dl_;
-
-            // 更新状态量
-            UpdateStates();
-            // 判断当前步是否可行以及 Dogleg 的 lambda 怎么更新, chi2 也计算一下
-            oneStepSuccess = IsGoodStepInDogleg();
-            // 后续处理，
-            if (oneStepSuccess) {
-//                std::cout << " get one step success\n";
-
-                // 在新线性化点 构建 hessian
-                MakeHessian();
-                // MakeHessianOpenMP();
-                // TODO:: 这个判断条件可以丢掉，条件 b_max <= 1e-12 很难达到，这里的阈值条件不应该用绝对值，而是相对值
-//                double b_max = 0.0;
-//                for (int i = 0; i < b_.size(); ++i) {
-//                    b_max = max(fabs(b_(i)), b_max);
-//                }
-//                // 优化退出条件2： 如果残差 b_max 已经很小了，那就退出
-//                stop = (b_max <= 1e-12);
-                false_cnt = 0;
-            } else {
-                false_cnt ++;
-                RollbackStates();   // 误差没下降，回滚
-            }
-        }
-        iter++;
-
-        // 优化退出条件3： currentChi_ 跟第一次的 chi2 相比，下降了 1e6 倍则退出
-        // TODO:: 应该改成前后两次的误差已经不再变化
-//        if (sqrt(currentChi_) <= stopThresholdLM_)
-//        if (sqrt(currentChi_) < 1e-15)
-        if(last_chi_ - currentChi_ < 1e-5)
-        {
-            // std::cout << "sqrt(currentChi_) <= stopThresholdDogleg_" << std::endl;
-            stop = true;
-        }
-        last_chi_ = currentChi_;
-    }
-    // std::cout << "problem solve cost: " << t_solve.toc() << " ms" << std::endl;
-    // std::cout << "   makeHessian cost: " << t_hessian_cost_ << " ms" << std::endl;
-    t_hessian_cost_ = 0.;
-    return true;
-}
-
-bool Problem::IsGoodStepInDogleg(){
-    double tempChi = 0.0;
-    for(auto edge: edges_)
-    {
-        edge.second->ComputeResidual();
-        tempChi += edge.second->RobustChi2();
-    }
-    if (err_prior_.size() > 0)
-        tempChi += err_prior_.norm();
-    tempChi *= 0.5;
-
-    double scale=0.0;
-
-    if(h_dl_ == h_gn_){
-        scale = currentChi_;
-    }
-    else if(h_dl_ == radius_ * b_ / b_.norm()) {
-        scale = radius_ * (2 * (alpha_ * b_).norm() - radius_) / (2 * alpha_);
-    } 
-    else { 
-        scale = 0.5 * alpha_ * pow( (1 - beta_), 2) * b_.squaredNorm() 
-                + beta_ * (2 - beta_) * currentChi_;
-    }
-
-    double rho_ = ( currentChi_ - tempChi )/scale;
-
-    if (rho_ > 0.75 && isfinite(tempChi)) {
-        radius_ = std::max(radius_, 3 * delta_x_.norm());
-    }
-    else if (rho_ < 0.25) {
-        radius_ = std::max(radius_ * 0.5, 1e-7);
-    } else {
-    // do nothing
-    }
-    if (rho_ > 0 && isfinite(tempChi)) {
-        currentChi_ = tempChi;
-    return true;
-    } else {
-        return false;
-    }
 }
 
 bool Problem::SolveGenericProblem(int iterations) {
@@ -472,206 +299,6 @@ bool Problem::CheckOrdering() {
     }
     return true;
 }
-
-void Problem::MakeHessianOpenMP() {
- /*   TicToc t_h;
-    // 直接构造大的 H 矩阵
-    ulong size = ordering_generic_;
-    MatXX H(MatXX::Zero(size, size));
-    VecX b(VecX::Zero(size));
-
-
-    std::vector<std::shared_ptr<Edge>> edges;
-    for (auto edge : edges_) {
-        edges.push_back(edge.second);
-    }
-
-    omp_set_num_threads(Threads_NUM);
-#pragma omp parallel
-    {
-#pragma omp for
-        for (int k = 0; k < edges.size(); ++k) {
-
-            edges[k]->ComputeResidual();
-            edges[k]->ComputeJacobians();
-
-            auto jacobians = edges[k]->Jacobians();
-            auto verticies = edges[k]->Verticies();
-            assert(jacobians.size() == verticies.size());
-            for (size_t i = 0; i < verticies.size(); ++i) {
-                auto v_i = verticies[i];
-                if (v_i->IsFixed()) continue;    // Hessian 里不需要添加它的信息，也就是它的雅克比为 0
-
-                auto jacobian_i = jacobians[i];
-                ulong index_i = v_i->OrderingId();
-                ulong dim_i = v_i->LocalDimension();
-
-                // 鲁棒核函数会修改残差和信息矩阵，如果没有设置 robust cost function，就会返回原来的
-                double drho;
-                MatXX robustInfo(edges[k]->Information().rows(),edges[k]->Information().cols());
-                edges[k]->RobustInfo(drho,robustInfo);
-
-                MatXX JtW = jacobian_i.transpose() * robustInfo;
-                for (size_t j = i; j < verticies.size(); ++j) {
-                    auto v_j = verticies[j];
-
-                    if (v_j->IsFixed()) continue;
-
-                    auto jacobian_j = jacobians[j];
-                    ulong index_j = v_j->OrderingId();
-                    ulong dim_j = v_j->LocalDimension();
-
-                    assert(v_j->OrderingId() != -1);
-                    MatXX hessian = JtW * jacobian_j;
-
-                    // 所有的信息矩阵叠加起来
-                    #pragma omp critical
-                    H.block(index_i, index_j, dim_i, dim_j).noalias() += hessian;
-                    if (j != i) {
-                        // 对称的下三角
-                        #pragma omp critical 
-                        H.block(index_j, index_i, dim_j, dim_i).noalias() += hessian.transpose();
-                    }
-                }
-
-                #pragma omp critical
-                b.segment(index_i, dim_i).noalias() -= drho * jacobian_i.transpose()* edges[k]->Information() * edges[k]->Residual();
-            }
-        }
-    }
-
-
-    Hessian_ = H;
-    b_ = b;
-    t_hessian_cost_ += t_h.toc();
-
-    if(H_prior_.rows() > 0)
-    {
-//        std::cout<<"add the H_prior_ to H"<<std::endl;
-        MatXX H_prior_tmp = H_prior_;
-        VecX b_prior_tmp = b_prior_;
-
-        /// 遍历所有 POSE 顶点，对fix的顶点设置相应的先验信息为 0 .  fix 外参数, SET PRIOR TO ZERO
-        /// landmark 没有先验
-        for (auto vertex: verticies_) {
-            if (IsPoseVertex(vertex.second) && vertex.second->IsFixed() ) {
-                int idx = vertex.second->OrderingId();
-                int dim = vertex.second->LocalDimension();
-                H_prior_tmp.block(idx,0, dim, H_prior_tmp.cols()).setZero();
-                H_prior_tmp.block(0,idx, H_prior_tmp.rows(), dim).setZero();
-                b_prior_tmp.segment(idx,dim).setZero();
-//                std::cout << " fixed prior, set the Hprior and bprior part to zero, idx: "<<idx <<" dim: "<<dim<<std::endl;
-            }
-        }
-        Hessian_.topLeftCorner(ordering_poses_, ordering_poses_) += H_prior_tmp;
-        b_.head(ordering_poses_) += b_prior_tmp;
-    }*/
-
-}
-
-
-/*void Problem::MakeHessian() {
-    TicToc t_h;
-    // 直接构造大的 H 矩阵
-    ulong size = ordering_generic_;
-    MatXX H(MatXX::Zero(size, size));
-    VecX b(VecX::Zero(size));
-
-
-    std::vector<std::shared_ptr<Edge>> edges;
-    for (auto edge : edges_) {
-        edges.push_back(edge.second);
-    }
-
-
-    omp_set_num_threads(Threads_NUM);
-#pragma omp parallel
-    {
-#pragma omp for
-        for (int k = 0; k < edges.size(); ++k) {
-
-        edge.second->ComputeResidual();
-        edge.second->ComputeJacobians();
-
-        // TODO:: robust cost
-        auto jacobians = edge.second->Jacobians();
-        auto verticies = edge.second->Verticies();
-        assert(jacobians.size() == verticies.size());
-        for (size_t i = 0; i < verticies.size(); ++i) {
-            auto v_i = verticies[i];
-            if (v_i->IsFixed()) continue;    // Hessian 里不需要添加它的信息，也就是它的雅克比为 0
-
-            auto jacobian_i = jacobians[i];
-            ulong index_i = v_i->OrderingId();
-            ulong dim_i = v_i->LocalDimension();
-
-            // 鲁棒核函数会修改残差和信息矩阵，如果没有设置 robust cost function，就会返回原来的
-            double drho;
-            MatXX robustInfo(edge.second->Information().rows(),edge.second->Information().cols());
-            edge.second->RobustInfo(drho,robustInfo);
-
-            MatXX JtW = jacobian_i.transpose() * robustInfo;
-            for (size_t j = i; j < verticies.size(); ++j) {
-                auto v_j = verticies[j];
-
-                if (v_j->IsFixed()) continue;
-
-                auto jacobian_j = jacobians[j];
-                ulong index_j = v_j->OrderingId();
-                ulong dim_j = v_j->LocalDimension();
-
-                assert(v_j->OrderingId() != -1);
-                MatXX hessian = JtW * jacobian_j;
-
-                // 所有的信息矩阵叠加起来
-                H.block(index_i, index_j, dim_i, dim_j).noalias() += hessian;
-                if (j != i) {
-                    // 对称的下三角
-                    H.block(index_j, index_i, dim_j, dim_i).noalias() += hessian.transpose();
-
-                }
-            }
-            b.segment(index_i, dim_i).noalias() -= drho * jacobian_i.transpose()* edges[k]->Information() * edges[k]->Residual();
-
-        }
-
-    }
-
-    for (int l = 0; l < Threads_NUM; ++l) {
-        H += H_vec[l];
-        b += b_vec[l];
-    }
-    Hessian_ = H;
-    b_ = b;
-    t_hessian_cost_ += t_h.toc();
-    NUM_MAKE_HESSIAN ++;
-
-    if(H_prior_.rows() > 0)
-    {
-        MatXX H_prior_tmp = H_prior_;
-        VecX b_prior_tmp = b_prior_;
-
-        /// 遍历所有 POSE 顶点，然后设置相应的先验维度为 0 .  fix 外参数, SET PRIOR TO ZERO
-        /// landmark 没有先验
-        for (auto vertex: verticies_) {
-            if (IsPoseVertex(vertex.second) && vertex.second->IsFixed() ) {
-                int idx = vertex.second->OrderingId();
-                int dim = vertex.second->LocalDimension();
-                H_prior_tmp.block(idx,0, dim, H_prior_tmp.cols()).setZero();
-                H_prior_tmp.block(0,idx, H_prior_tmp.rows(), dim).setZero();
-                b_prior_tmp.segment(idx,dim).setZero();
-//                std::cout << " fixed prior, set the Hprior and bprior part to zero, idx: "<<idx <<" dim: "<<dim<<std::endl;
-            }
-        }
-        Hessian_.topLeftCorner(ordering_poses_, ordering_poses_) += H_prior_tmp;
-        b_.head(ordering_poses_) += b_prior_tmp;
-    }
-
-    delta_x_ = VecX::Zero(size);  // initial delta_x = 0_n;
-
-
-}*/
-
 
 void Problem::MakeHessian() {
     TicToc t_h;
@@ -911,74 +538,40 @@ void Problem::RemoveLambdaHessianLM() {
     }
 }
 
-// bool Problem::IsGoodStepInLM() {
-//     double scale = 0;
-// //    scale = 0.5 * delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
-// //    scale += 1e-3;    // make sure it's non-zero :)
-//     scale = 0.5* delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
-//     scale += 1e-6;    // make sure it's non-zero :)
-
-//     // recompute residuals after update state
-//     double tempChi = 0.0;
-//     for (auto edge: edges_) {
-//         edge.second->ComputeResidual();
-//         tempChi += edge.second->RobustChi2();
-//     }
-//     if (err_prior_.size() > 0)
-//         tempChi += err_prior_.squaredNorm();
-//     tempChi *= 0.5;          // 1/2 * err^2
-
-//     double rho = (currentChi_ - tempChi) / scale;
-//     if (rho > 0 && isfinite(tempChi))   // last step was good, 误差在下降
-//     {
-//         double alpha = 1. - pow((2 * rho - 1), 3);
-//         alpha = std::min(alpha, 2. / 3.);
-//         double scaleFactor = (std::max)(1. / 3., alpha);
-//         currentLambda_ *= scaleFactor;
-//         ni_ = 2;
-//         currentChi_ = tempChi;
-//         return true;
-//     } else {
-//         currentLambda_ *= ni_;
-//         ni_ *= 2;
-//         return false;
-//     }
-// }
-
 bool Problem::IsGoodStepInLM() {
+    double scale = 0;
+//    scale = 0.5 * delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
+//    scale += 1e-3;    // make sure it's non-zero :)
+    scale = 0.5* delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
+    scale += 1e-6;    // make sure it's non-zero :)
 
-   double tempChi = 0.0;
-   for(auto edge: edges_)
-   {
-       edge.second->ComputeResidual();
-       tempChi += edge.second->RobustChi2();
-   }
-   if (err_prior_.size() > 0)
-       tempChi += err_prior_.norm();
-   tempChi *= 0.5;
+    // recompute residuals after update state
+    double tempChi = 0.0;
+    for (auto edge: edges_) {
+        edge.second->ComputeResidual();
+        tempChi += edge.second->RobustChi2();
+    }
+    if (err_prior_.size() > 0)
+        tempChi += err_prior_.squaredNorm();
+    tempChi *= 0.5;          // 1/2 * err^2
 
-   double frac1 = delta_x_.transpose() * b_;
-   double alpha = frac1 / (((tempChi - currentChi_)/2.) + 2 * frac1);
-   RollbackStates();
-   delta_x_ *= alpha;
-   UpdateStates();
-   double scale = 0;
-   scale = delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
-   scale += 1e-3;
-
-   double rho = (currentChi_ - tempChi) / scale;
-   if(rho > 0 && isfinite(tempChi))
-   {
-       currentLambda_ = std::max(currentLambda_ / (1+alpha), 1e-7);
-       currentChi_ = tempChi;
-       return true;
-   }
-   else
-   {
-       currentLambda_ += abs(currentChi_ - tempChi) / (2.*alpha);
-       return false;
-   }
+    double rho = (currentChi_ - tempChi) / scale;
+    if (rho > 0 && isfinite(tempChi))   // last step was good, 误差在下降
+    {
+        double alpha = 1. - pow((2 * rho - 1), 3);
+        alpha = std::min(alpha, 2. / 3.);
+        double scaleFactor = (std::max)(1. / 3., alpha);
+        currentLambda_ *= scaleFactor;
+        ni_ = 2;
+        currentChi_ = tempChi;
+        return true;
+    } else {
+        currentLambda_ *= ni_;
+        ni_ *= 2;
+        return false;
+    }
 }
+
 /** @brief conjugate gradient with perconditioning
  *
  *  the jacobi PCG method
@@ -1086,7 +679,7 @@ bool Problem::Marginalize(const std::vector<std::shared_ptr<Vertex> > margVertex
         }
 
     }
-    //    std::cout << "edge factor cnt: " << ii <<std::endl;
+        // std::cout << "edge factor cnt: " << ii <<std::endl;
 
     /// marg landmark
     int reserve_size = pose_dim;

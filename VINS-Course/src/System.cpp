@@ -7,7 +7,7 @@ using namespace cv;
 using namespace pangolin;
 
 System::System(string sConfig_file_)
-    :bStart_backend(true)
+    :bStart_backend(true), estimator(new Estimator())
 {
     string sConfig_file = sConfig_file_ + "euroc_config.yaml";
 
@@ -16,7 +16,7 @@ System::System(string sConfig_file_)
 
     trackerData[0].readIntrinsicParameter(sConfig_file);
 
-    estimator.setParameter();
+    estimator->setParameter();
     ofs_pose.open("./pose_output.txt",fstream::out);
     ofs_ex.open("./extrinsic_output.txt",fstream::out);
     if(!ofs_pose.is_open())
@@ -42,11 +42,12 @@ System::~System()
     m_buf.unlock();
 
     m_estimator.lock();
-    estimator.clearState();
+    estimator->clearState();
     m_estimator.unlock();
 
     ofs_pose.close();
     ofs_ex.close();
+    delete estimator;
 }
 
 void System::PubImageData(double dStampSec, Mat &img)
@@ -184,7 +185,7 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
             return measurements;
         }
 
-        if (!(imu_buf.back()->header > feature_buf.front()->header + estimator.td))
+        if (!(imu_buf.back()->header > feature_buf.front()->header + estimator->td))
         {
             cerr << "wait for imu, only should happen at the beginning sum_of_wait: " 
                 << sum_of_wait << endl;
@@ -192,7 +193,7 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
             return measurements;
         }
 
-        if (!(imu_buf.front()->header < feature_buf.front()->header + estimator.td))
+        if (!(imu_buf.front()->header < feature_buf.front()->header + estimator->td))
         {
             cerr << "throw img, only should happen at the beginning" << endl;
             feature_buf.pop();
@@ -202,7 +203,7 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
         feature_buf.pop();
 
         vector<ImuConstPtr> IMUs;
-        while (imu_buf.front()->header < img_msg->header + estimator.td)
+        while (imu_buf.front()->header < img_msg->header + estimator->td)
         {
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
@@ -320,7 +321,7 @@ void System::ProcessBackEnd()
             for (auto &imu_msg : measurement.first)
             {
                 double t = imu_msg->header;
-                double img_t = img_msg->header + estimator.td;
+                double img_t = img_msg->header + estimator->td;
                 if (t <= img_t)
                 {
                     if (current_time < 0)
@@ -334,7 +335,7 @@ void System::ProcessBackEnd()
                     rx = imu_msg->angular_velocity.x();
                     ry = imu_msg->angular_velocity.y();
                     rz = imu_msg->angular_velocity.z();
-                    estimator.processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+                    estimator->processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
                     // printf("1 BackEnd imu: dt:%f a: %f %f %f w: %f %f %f\n",dt, dx, dy, dz, rx, ry, rz);
                 }
                 else
@@ -353,7 +354,7 @@ void System::ProcessBackEnd()
                     rx = w1 * rx + w2 * imu_msg->angular_velocity.x();
                     ry = w1 * ry + w2 * imu_msg->angular_velocity.y();
                     rz = w1 * rz + w2 * imu_msg->angular_velocity.z();
-                    estimator.processIMU(dt_1, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+                    estimator->processIMU(dt_1, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
                     //printf("dimu: dt:%f a: %f %f %f w: %f %f %f\n",dt_1, dx, dy, dz, rx, ry, rz);
                 }
             }
@@ -381,16 +382,16 @@ void System::ProcessBackEnd()
                 image[feature_id].emplace_back(camera_id, xyz_uv_velocity);
             }
             TicToc t_processImage;
-            estimator.processImage(image, img_msg->header);
+            estimator->processImage(image, img_msg->header);
             
-            if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+            if (estimator->solver_flag == Estimator::SolverFlag::NON_LINEAR)
             {
                 Vector3d p_wi;
                 Quaterniond q_wi;
-                q_wi = Quaterniond(estimator.Rs[WINDOW_SIZE]);
-                p_wi = estimator.Ps[WINDOW_SIZE];
+                q_wi = Quaterniond(estimator->Rs[WINDOW_SIZE]);
+                p_wi = estimator->Ps[WINDOW_SIZE];
                 vPath_to_draw.push_back(p_wi);
-                double dStamp = estimator.Headers[WINDOW_SIZE];
+                double dStamp = estimator->Headers[WINDOW_SIZE];
                 cout << "1 BackEnd processImage dt: " << fixed << t_processImage.toc() << " stamp: " <<  dStamp << " p_wi: " << p_wi.transpose() << endl;
                 ofs_pose << fixed << dStamp << " " << p_wi(0) << " " << p_wi(1) << " " << p_wi(2) << " " 
                           << q_wi.x() << " " << q_wi.y() << " " << q_wi.z()<< " "  << q_wi.w() << endl;
@@ -447,13 +448,13 @@ void System::Draw()
         glEnd();
         
         // points
-        if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+        if (estimator->solver_flag == Estimator::SolverFlag::NON_LINEAR)
         {
             glPointSize(5);
             glBegin(GL_POINTS);
             for(int i = 0; i < WINDOW_SIZE+1;++i)
             {
-                Vector3d p_wi = estimator.Ps[i];
+                Vector3d p_wi = estimator->Ps[i];
                 glColor3f(1, 0, 0);
                 glVertex3d(p_wi[0],p_wi[1],p_wi[2]);
             }
@@ -507,13 +508,13 @@ void System::DrawGLFrame()
         glEnd();
         
         // points
-        if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+        if (estimator->solver_flag == Estimator::SolverFlag::NON_LINEAR)
         {
             glPointSize(5);
             glBegin(GL_POINTS);
             for(int i = 0; i < WINDOW_SIZE+1;++i)
             {
-                Vector3d p_wi = estimator.Ps[i];
+                Vector3d p_wi = estimator->Ps[i];
                 glColor3f(1, 0, 0);
                 glVertex3d(p_wi[0],p_wi[1],p_wi[2]);
             }

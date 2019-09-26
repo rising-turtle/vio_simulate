@@ -15,6 +15,8 @@ class EstimatorIntric : public Estimator{
 public:
 	EstimatorIntric(); 
 
+    virtual ~EstimatorIntric();
+
    // internal
     void clearState();
     void slideWindow();

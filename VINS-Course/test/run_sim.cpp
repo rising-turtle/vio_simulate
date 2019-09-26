@@ -71,7 +71,7 @@ void compute_delta_intrinsic(double timestamp, double& df, double& dcx, double& 
 	df = dcx = dcy = 0; 
 	IMUData d; 
 	double kf, kcx, kcy; 
-	kf = 0.5; kcx = kcy= 3.; 
+	kf = 0.3; kcx = kcy= 3.; 
 	if(imu_set.getIMUData(timestamp, d)){
 		Vector3d vAcc, wAcc, wAcc_nog, cAcc; // in body 
 		Quaterniond q;
@@ -151,7 +151,7 @@ void PubImageData()
 		double dt = dStampNSec - dStampNSec_pre;
 
 
-		if(cnt > 20){ // skip 15 frames for initialization 
+		if(cnt > 20){ // skip 12 frames for initialization 
 				
 			compute_delta_intrinsic(dStampNSec, dfx, dcx, dcy);
 			tf += dfx * dt; 
