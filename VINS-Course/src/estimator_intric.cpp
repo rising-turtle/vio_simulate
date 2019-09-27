@@ -22,7 +22,7 @@ using namespace myslam;
 EstimatorIntric::EstimatorIntric() : 
 Estimator()
 {
-	
+	clearState();
 }
 
 
@@ -30,11 +30,23 @@ EstimatorIntric::~EstimatorIntric(){}
 
 void EstimatorIntric::clearState()
 {
+    // cout<<"estimator_intric: clearState here, set CamIncs!"<<endl;
 	Estimator::clearState(); 
 	for(int i=0; i<WINDOW_SIZE+1; i++){
 		CamIncs[i].setZero(); 
         CamIncs[i]<< FOCAL_LENGTH, CX, CY;
+        // cout<<"cam["<<i<<"]: "<<CamIncs[i].transpose()<<endl;
 	}
+}
+
+VecX EstimatorIntric::getResult()
+{
+    VecX r(10); 
+    // auto euler = Rs[WINDOW_SIZE].eulerAngles(0, 1, 2); 
+    Quaterniond q(Rs[WINDOW_SIZE]);
+    r << Ps[WINDOW_SIZE][0],  Ps[WINDOW_SIZE][1], Ps[WINDOW_SIZE][2], 
+        q.x(), q.y(), q.z(), q.w(), CamIncs[WINDOW_SIZE][0], CamIncs[WINDOW_SIZE][1], CamIncs[WINDOW_SIZE][2];
+    return r;
 }
 
 void EstimatorIntric::vector2double()

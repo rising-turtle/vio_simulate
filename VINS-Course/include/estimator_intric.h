@@ -19,6 +19,7 @@ public:
 
    // internal
     void clearState();
+    VecX getResult();
     void slideWindow();
     void solveOdometry();
 

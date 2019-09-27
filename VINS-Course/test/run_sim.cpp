@@ -64,7 +64,7 @@ void PubImuData()
 
 		// cout << "Imu t: " << fixed << dStampNSec << " gyr: " << vGyr.transpose() << " acc: " << vAcc.transpose() << endl;
 		pSystem->PubImuData(dStampNSec, vGyr, vAcc); //Modified
-		usleep(1000*5*10); // ms 200 hz about 5ms  
+		usleep(1000*5*3); // ms 200 hz about 5ms  
 	}
 }
 
@@ -82,9 +82,12 @@ void compute_delta_intrinsic(double timestamp, double& df, double& dcx, double& 
 		wAcc = q * vAcc; // qwb * acc_b 
 		wAcc_nog = wAcc; 
 		wAcc_nog.z() += -9.81; 
+		auto euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
 		cAcc = RIC[0].inverse() * q.toRotationMatrix().inverse() * wAcc_nog; // Rcb * Rbw * a_w 
 		// cout <<" run_sim: at "<<timestamp<<" vAcc: "<<vAcc.transpose()<<" wAcc: "<<wAcc.transpose()<<
 		// " wAcc_nog: "<<wAcc_nog.transpose()<<" cAcc: "<<cAcc<<endl;
+
+		cout <<"run_sim: gt at "<<timestamp<<" pose: "<<d.mt[0]<<", "<<d.mt[1]<<", "<<d.mt[2]<<" euler: "<<euler.transpose()<<endl;
 
 		df = kf * cAcc.z(); 
 		dcx = kcx * cAcc.x(); 
@@ -162,7 +165,7 @@ void PubImageData()
 			tcx += dcx * dt; 
 			tcy += dcy * dt;
 
-			// cout <<"run_sim: now f: "<<tf<<" cx: "<< tcx<<" cy: "<<tcy<<endl;
+			cout <<"run_sim: gt at "<< dStampNSec<<" f: "<<tf<<" cx: "<< tcx<<" cy: "<<tcy<<endl;
 
 		} 
 
@@ -214,7 +217,7 @@ void PubImageData()
 		
 		pSystem->PubFeatureData(dStampNSec , ids, /*landmarks,*/feature_positions_un, feature_positions, feature_velocities);
 
-		usleep(1000*20*5*nDelayTimes); // 30 hz, 33 ms 
+		usleep(1000*10*5*nDelayTimes); // 30 hz, 33 ms 
 	}
 	fsTimestamp.close();
 }

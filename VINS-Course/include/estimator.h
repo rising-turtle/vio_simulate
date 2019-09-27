@@ -53,6 +53,7 @@ class Estimator
     virtual void double2vector();
     bool failureDetection();
 
+    virtual VecX getResult();
 
     enum SolverFlag
     {

@@ -10,11 +10,13 @@ using namespace pangolin;
 System::System(string sConfig_file_)
     :bStart_backend(true),  // estimator(new Estimator())
     estimator(new EstimatorIntric())
+    // estimator(new Estimator())
 {
     string sConfig_file = sConfig_file_ + "euroc_config.yaml";
 
     cout << "1 System() sConfig_file: " << sConfig_file << endl;
     readParameters(sConfig_file);
+    estimator->clearState();
 
     trackerData[0].readIntrinsicParameter(sConfig_file);
 
@@ -394,9 +396,22 @@ void System::ProcessBackEnd()
                 p_wi = estimator->Ps[WINDOW_SIZE];
                 vPath_to_draw.push_back(p_wi);
                 double dStamp = estimator->Headers[WINDOW_SIZE];
-                cout << "1 BackEnd processImage dt: " << fixed << t_processImage.toc() << " stamp: " <<  dStamp << " p_wi: " << p_wi.transpose() << endl;
+                // cout << "1 BackEnd processImage dt: " << fixed << t_processImage.toc() << " stamp: " <<  dStamp << " p_wi: " << p_wi.transpose() << endl;
                 ofs_pose << fixed << dStamp << " " << p_wi(0) << " " << p_wi(1) << " " << p_wi(2) << " " 
                           << q_wi.x() << " " << q_wi.y() << " " << q_wi.z()<< " "  << q_wi.w() << endl;
+
+                {
+                    // show result 
+                    VecX r = estimator->getResult(); 
+                    Quaterniond q(r[6], r[3], r[4], r[5]); 
+                    auto euler = q.toRotationMatrix().eulerAngles(0, 1, 2); 
+                    cout<<"System: at "<<img_msg->header<<" estimate pose: "<<r[0]<<", "<<r[1]<<", "<<r[2]<<" euler: "<<euler[0]<<", "
+                        <<euler[1]<<", "<<euler[2]<<""<<endl; 
+                    if(r.size() > 7){
+                        cout<<"System: at "<<img_msg->header<<" cam intric: f: "<<r[7]<<" cx: "<<r[8]<<" cy: "<<r[9]<<endl;
+                    }
+
+                }
             }
         }
         m_estimator.unlock();

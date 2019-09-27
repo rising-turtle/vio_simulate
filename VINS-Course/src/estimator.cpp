@@ -45,6 +45,16 @@ void Estimator::setParameter()
     td = TD;
 }
 
+VecX Estimator::getResult()
+{
+    VecX r(7); 
+    // auto euler = Rs[WINDOW_SIZE].eulerAngles(0, 1, 2); 
+    Quaterniond q(Rs[WINDOW_SIZE]);
+    r << Ps[WINDOW_SIZE][0],  Ps[WINDOW_SIZE][1], Ps[WINDOW_SIZE][2], 
+        q.x(), q.y(), q.z(), q.w();
+    return r;
+}
+
 void Estimator::clearState()
 {
     for (int i = 0; i < WINDOW_SIZE + 1; i++)
