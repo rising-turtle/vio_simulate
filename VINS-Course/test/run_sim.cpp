@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 	thd_PubImuData.join();
 	thd_PubImageData.join();
 
-	// thd_BackEnd.join();
+	thd_BackEnd.join();
 #ifdef __linux__	
 	thd_Draw.join();
 #endif
