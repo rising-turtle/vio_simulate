@@ -129,22 +129,17 @@ void PubImageData()
 			std::istringstream ssFeatureData(sFeature_line);
 			ssFeatureData >> landmark.x() >> landmark.y() >> landmark.z() >> landmark.w() >> feature_position.x() >> feature_position.y();
 
-			feature_position.x() = feature_position.x()*460.0 + 320.0;
-			feature_position.y() = feature_position.y()*460.0 + 240.0;
-
-			feature_position.x() = (feature_position.x()-cx)/fx;
-			feature_position.y() = (feature_position.y()-cy)/fy;
-
 			//Record
 			//landmarks.push_back(landmark); //Pixel coordinate
 			feature_positions_un.push_back(feature_position);
 			feature_position.x() = feature_position.x()*fx + cx;
 			feature_position.y() = feature_position.y()*fy + cy;
-			if (feature_position.x()>0&&feature_position.x()<640&&feature_position.y()>0&&feature_position.y()<480){
+			// if (feature_position.x()>0&&feature_position.x()<640&&feature_position.y()>0&&feature_position.y()<480){
+			
 				feature_positions.push_back(feature_position);
-			}
+			
+			// }
 				
-
 			// cout << feature_position.x() <<"  "<<feature_position.y() <<endl;
 
 			//This dataset has aligned the feature points

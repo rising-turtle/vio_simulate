@@ -2,7 +2,9 @@
 /*
 	Sep. 25 2019, He Zhang, hzhang8@vcu.edu 
 
-	run simulated data 
+	run simulated data, by simulating camera intrinsic changes 
+
+	to make it work, needs to change the estimator in the construction fuction of System (line 12 in System.cpp)
 
 */
 

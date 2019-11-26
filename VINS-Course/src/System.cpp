@@ -9,8 +9,8 @@ using namespace pangolin;
 
 System::System(string sConfig_file_)
     :bStart_backend(true),  // estimator(new Estimator())
-    estimator(new EstimatorIntric())
-    // estimator(new Estimator())
+    // estimator(new EstimatorIntric())
+    estimator(new Estimator())
 {
     string sConfig_file = sConfig_file_ + "euroc_config.yaml";
 
