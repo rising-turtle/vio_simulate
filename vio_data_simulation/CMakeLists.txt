@@ -47,3 +47,6 @@ TARGET_LINK_LIBRARIES (data_gen ${LINK_LIBS})
 
 ADD_EXECUTABLE(vinsData main/vins_Simdata.cpp src/param.h src/param.cpp src/utilities.h src/utilities.cpp src/imu.h src/imu.cpp)
 TARGET_LINK_LIBRARIES (vinsData ${LINK_LIBS})
+
+ADD_EXECUTABLE(vinsData_depth main/vins_simdata_with_depth.cpp src/param.h src/param.cpp src/utilities.h src/utilities.cpp src/imu.h src/imu.cpp)
+TARGET_LINK_LIBRARIES (vinsData_depth ${LINK_LIBS})

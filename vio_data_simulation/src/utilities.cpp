@@ -37,6 +37,27 @@ void save_features(std::string filename,
                    <<std::endl;
     }
 }
+void save_features_depth(std::string filename,
+                   std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > points,
+                   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > features)
+{
+    std::ofstream save_points;
+    save_points.open(filename.c_str());
+
+    for (int i = 0; i < points.size(); ++i) {
+        Eigen::Vector4d p = points[i];
+        Eigen::Vector3d f = features[i];
+        save_points<<p(0)<<" "
+                   <<p(1)<<" "
+                   <<p(2)<<" "
+                   <<p(3)<<" "
+                   <<f(0)<<" "
+                   <<f(1)<<" "
+                   <<f(2)<<" "
+                   <<std::endl;
+    }
+}
+
 void save_lines(std::string filename,
                 std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > features)
 {
